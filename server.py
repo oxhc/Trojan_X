@@ -32,7 +32,7 @@ class TrojanServer:
         self.utpPort = 8089
         self.utpRecvPort = 8083
         self.tcpPort = 8877
-        self.bind_IP = '100.95.220.202'
+        self.bind_IP = '100.95.220.133'
         # self.bind_IP = '127.0.0.1'
         self.ck = -1  # 当前选中的肉鸡序号
         self.enMsg = False  # 是否显示肉鸡消息

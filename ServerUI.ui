@@ -41,7 +41,7 @@
            </widget>
           </item>
           <item>
-           <widget class="QLineEdit" name="lineEdit"/>
+           <widget class="QLineEdit" name="ipInput"/>
           </item>
           <item>
            <widget class="QPushButton" name="pushButton">
@@ -63,16 +63,12 @@
           <item>
            <widget class="QLabel" name="label_6">
             <property name="text">
-             <string>UDP Send Port:</string>
+             <string>UDPSendPort:</string>
             </property>
            </widget>
           </item>
           <item>
-           <widget class="QLabel" name="udpSendLable">
-            <property name="text">
-             <string>UDP</string>
-            </property>
-           </widget>
+           <widget class="QLineEdit" name="usp"/>
           </item>
           <item>
            <spacer name="horizontalSpacer_3">
@@ -87,6 +83,16 @@
             </property>
            </spacer>
           </item>
+          <item>
+           <widget class="QLabel" name="label_7">
+            <property name="text">
+             <string>TCPport:</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLineEdit" name="tp"/>
+          </item>
          </layout>
         </item>
         <item>
@@ -94,16 +100,12 @@
           <item>
            <widget class="QLabel" name="label_8">
             <property name="text">
-             <string>UDP Recv Port:</string>
+             <string>UDPRecvPort:</string>
             </property>
            </widget>
           </item>
           <item>
-           <widget class="QLabel" name="udpRecvLable">
-            <property name="text">
-             <string>UDP</string>
-            </property>
-           </widget>
+           <widget class="QLineEdit" name="urp"/>
           </item>
           <item>
            <spacer name="horizontalSpacer_4">
@@ -217,14 +219,7 @@
         <item>
          <layout class="QHBoxLayout" name="horizontalLayout">
           <item>
-           <widget class="QCheckBox" name="polybox">
-            <property name="text">
-             <string>多选</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QPushButton" name="pushButton_2">
+           <widget class="QPushButton" name="deletebutton">
             <property name="text">
              <string>删除</string>
             </property>
@@ -296,7 +291,7 @@
            </widget>
           </item>
           <item row="2" column="1">
-           <widget class="QPushButton" name="pushButton_6">
+           <widget class="QPushButton" name="icmpButton">
             <property name="text">
              <string>ICMP攻击</string>
             </property>
@@ -308,31 +303,8 @@
             </property>
            </widget>
           </item>
-          <item row="2" column="2">
-           <widget class="QPushButton" name="pushButton_5">
-            <property name="text">
-             <string>TCP半开攻击</string>
-            </property>
-            <property name="default">
-             <bool>true</bool>
-            </property>
-            <property name="flat">
-             <bool>true</bool>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="5">
-           <widget class="QLabel" name="label_5">
-            <property name="text">
-             <string>端口号:</string>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="6">
-           <widget class="QLineEdit" name="lineEdit_4"/>
-          </item>
           <item row="2" column="3">
-           <widget class="QPushButton" name="pushButton_3">
+           <widget class="QPushButton" name="shutdownButton">
             <property name="text">
              <string>关机</string>
             </property>
@@ -344,23 +316,23 @@
             </property>
            </widget>
           </item>
-          <item row="0" column="3">
-           <widget class="QLabel" name="label_3">
-            <property name="text">
-             <string>进程数:</string>
-            </property>
-           </widget>
-          </item>
           <item row="0" column="2">
            <widget class="QLineEdit" name="lineEdit_2"/>
           </item>
-          <item row="0" column="4">
-           <widget class="QLineEdit" name="lineEdit_3"/>
+          <item row="0" column="3">
+           <widget class="QLabel" name="label_5">
+            <property name="text">
+             <string>端口号:</string>
+            </property>
+           </widget>
           </item>
-          <item row="2" column="4">
+          <item row="0" column="4">
+           <widget class="QLineEdit" name="lineEdit_4"/>
+          </item>
+          <item row="2" column="2">
            <widget class="QPushButton" name="pushButton_4">
             <property name="text">
-             <string>TCP全开攻击</string>
+             <string>TCPFlood攻击</string>
             </property>
             <property name="default">
              <bool>true</bool>
@@ -370,7 +342,7 @@
             </property>
            </widget>
           </item>
-          <item row="2" column="6">
+          <item row="2" column="4">
            <widget class="QPushButton" name="saveButton">
             <property name="text">
              <string>保存</string>
