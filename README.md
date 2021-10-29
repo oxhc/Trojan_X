@@ -10,11 +10,12 @@
 
 主界面
 
-![](.pic/TrojanX_Readme/413617e48abf1e1c.png)
+![](https://s3.bmp.ovh/imgs/2021/10/413617e48abf1e1c.png)
 
-​	控制界面
+控制界面
 
-![](.pic/TrojanX_Readme/8392bca1ed651fa2.png)
+![](https://s3.bmp.ovh/imgs/2021/10/8392bca1ed651fa2.png)
+
 
 ###### requirements
 
